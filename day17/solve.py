@@ -79,7 +79,7 @@ class Computer:
         self.pointer += 2
     
     def jnx(self,operand):
-        if self.register_a == 0:
+        if self.register_a == 0 or operand == self.pointer:
             self.pointer += 2
             return
         self.pointer = operand
@@ -126,6 +126,38 @@ class Computer:
                 print("Invalid instruction")
         return self.output
     
+    def run_bis(self):
+        values = [x for x in range(7)]
+        for i in range(1,len(self.instructions)+1):
+            temp_values = self.test_value(-i,values)
+            values = []
+            for value in temp_values:
+                for j in range(8):
+                    values.append(value*8 + j)
+
+        return temp_values
+
+
+
+
+
+
+
+    def test_value(self,index, values):
+        objective = self.instructions[index]
+        print(objective)
+        possible_values = []
+        for i in values:
+            self.register_a = i
+            b= ((i%8)^3)
+            c = i//(2**b)
+            b = (b^c)
+            b = (b^5)%8
+            if (b==objective):
+                possible_values.append(i)
+        return possible_values
+        
+            
 
 def get_input(file_path):
     with open(file_path,"r") as file:
@@ -144,6 +176,8 @@ def main(input_file):
     register_a, register_b, register_c, instructions = get_input(input_file)
     computer = Computer(instructions,register_a,register_b,register_c)
     output = computer.run()
+    output_bis = computer.run_bis()
+    print(sorted(output_bis)[0])
     print(",".join([str(x) for x in output]))
 
 
