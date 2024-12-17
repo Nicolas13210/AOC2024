@@ -19,32 +19,46 @@ class Computer:
             return self.register_c
         else:
             return -1
+        
+    
+    def __str__(self) -> str:
+        return (f"Register A: {self.register_a}\nRegister B: {self.register_b}\nRegister C: {self.register_c}\nOutput: {self.output}")
 
     
     
 
 
     def get_binary(self,operand):
-        operand %= 2**self.num_bit
         result = ""
-        for i in range(self.num_bit):
-            result = str(operand % 2) + result
-            operand //= 2
+        while operand > 0:
+            result = str(operand%2) + result
+            operand = operand//2
+        if result == "":
+            result = "0"
         return result
     
     def get_decimal(self,operand):
         result = 0
-        for i in range(self.num_bit):
-            result += int(operand[i]) * 2**(self.num_bit - i - 1)
+        for i in range(len(operand)):
+            result += int(operand[i]) * 2**(len(operand) - i - 1)
         return result
 
     def get_xor(self,operand1,operand2):
         result = ""
-        for i in range(self.num_bit):
-            if operand1[i] == "1" or operand2[i] == "1":
-                result += "0"
-            else:
+        length = len(operand1)
+        length2 = len(operand2)
+        max_length = max(length,length2)
+        if length < max_length:
+            operand1 = "0"*(max_length - length) + operand1
+        if length2 < max_length:
+            operand2 = "0"*(max_length - length2) + operand2
+
+
+        for i in range(max_length):
+            if operand1[i] !=operand2[i]:
                 result += "1"
+            else:
+                result += "0"
         result = self.get_decimal(result)
         return result
 
@@ -132,5 +146,7 @@ def main(input_file):
     output = computer.run()
     print(",".join([str(x) for x in output]))
 
-main("day17/example.txt")
+
+if __name__ == "__main__":
+    main("day17/input.txt")
 
