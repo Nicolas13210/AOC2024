@@ -9,56 +9,40 @@
 #include "../utils/Reader.cpp"
 
 
-int get_start_position(const std::map<int, std::string>& number_position, int line_size, int max_size) {
-    if (number_position.empty()) {
-        return 0;
-    }
-    if (number_position.begin()->first <= line_size - max_size) {
-        return number_position.begin()->first;
+int get_start_position(int max_size, std::string line) {
+    for (int i=9;i>-1;i--){
+        std::regex pattern (std::to_string(i) );
+        std::sregex_iterator it(line.begin(), line.end(), pattern);
+        std::sregex_iterator end;
+        while (it!=end) {
+            int candidate = it->position();
+            if (candidate < line.size() - max_size) {
+                return candidate;
+            }
+        }
     }
     return 0;
 }
 
-long long process_line(std::string line, int num_size) {
-    std::map<int, std::string> number_position;
-    int start_position = 0;
-    for (int j=9;j>-1;j--){
-        // std::cout << "Starting search for digit: " << j << " start position: " << start_position << std::endl;
-        std::regex pattern (std::to_string(j) );
-        std::sregex_iterator it(line.begin() + start_position, line.end(), pattern);
-        std::sregex_iterator end;
-        std::vector<std::smatch> matches;
-        while(it!=end) {
-            matches.push_back(*it);
-            ++it;
-        }
-        for (auto rit = matches.rbegin(); rit != matches.rend(); ++rit) {
-            std::smatch match = *rit;
-            int actual_position = match.position() + start_position;
-            number_position[actual_position] = std::to_string(j);
-            if (number_position.size() == num_size) {
-                std::string combined_number_str = "";
-                for (const auto& pair : number_position) {
-                    combined_number_str += pair.second;
-                }
-                long long number = std::stol(combined_number_str);
-                return number;
-            }
-        
-        }
-        if (number_position.size() < num_size) {
-            start_position = get_start_position(number_position, line.size() , num_size);
-        }
+long long process_line_rec(std::string line,int num_size,int position, std::string current_number) {
+    if (current_number.size() == num_size) {
+        return std::stol(current_number);
     }
-    // std::cout << "Could not find a number for line: " << line << std::endl;
-    // if (!number_position.empty()) {
-    //     for (const auto& pair : number_position) {
-    //         std::cout << "Position: " << pair.first << " Digit: " << pair.second << std::endl;
-    //     }
-    // }
-    std::cout << "No number found in line: " << line << std::endl;
+    if (position >= line.size() - (num_size - current_number.size())+1) {
+        return 0;
+    }
+    return std::max(
+        process_line_rec(line,num_size,position+1,current_number),
+        process_line_rec(line,num_size,position+1,current_number + line[position])
+    );
+}
 
-    return 0;
+long long process_line(std::string line, int num_size) {
+    int start_position = get_start_position(num_size, line);
+    long long result = process_line_rec(line, num_size, start_position, "");
+    std::cout << "Processed line: " << line << " Result: " << result << std::endl;
+
+    return result;
 }
 
 int main(int argc, char* argv[]) {
