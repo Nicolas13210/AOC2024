@@ -20,6 +20,11 @@ public:
         }
     }
 
+    void reset() {
+        fileStream.clear(); // Clear any EOF flags
+        fileStream.seekg(0, std::ios::beg); // Go back to the beginning
+    }
+
     std::string readAll() {
         std::string content;
         std::string line;
@@ -29,6 +34,8 @@ public:
         while (std::getline(fileStream, line)) {
             content += line + "\n";
         }
+        fileStream.clear(); 
+        fileStream.seekg(0, std::ios::beg);  // Reset back to beginninge
         return content;
     }
 
