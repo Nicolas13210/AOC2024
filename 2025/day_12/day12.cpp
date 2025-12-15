@@ -97,6 +97,40 @@ class Shape {
 
 };
 
+class Region {
+    public:
+    Region() = default;
+    Region(std::string description) {
+        std::vector<std::string> parts = split(description,":");
+        std::vector<std::string> size_parts = split(parts[0],'x');
+        size = {std::stoi(size_parts[0]), std::stoi(size_parts[1])};
+        std::vector<std::string> shape_amount_parts = split(parts[1],' ');
+        for (const std::string& amt_str : shape_amount_parts) {
+            if (amt_str.empty()) continue;
+            shape_amounts.push_back(std::stoi(amt_str));
+        }
+    }
+    std::pair<int,int> getSize() const {
+        return size;
+    }
+    std::vector<int> getShapeAmounts() const {
+        return shape_amounts;
+    }
+
+    std::string toString() const {
+        std::string region_str = "Size: " + std::to_string(size.first) + "x" + std::to_string(size.second) + "\nShapes: ";
+        for (int amt : shape_amounts) {
+            region_str += std::to_string(amt) + " ";
+        }
+        return region_str;
+    }
+
+    private:
+    std::pair<int, int> size;
+    std::vector<int> shape_amounts;
+
+};
+
 void getShapes(std::vector<std::string> shape_descriptions, std::map<int, Shape>& shapes) {
     for (const std::string& desc : shape_descriptions) {
         std::cout << "Processing shape description:\n" << desc << std::endl;
@@ -107,7 +141,8 @@ void getShapes(std::vector<std::string> shape_descriptions, std::map<int, Shape>
 
 int processRegion(const std::string& region, const std::map<int, Shape>& shapes) {
     int result = 0;
-    std::cout << "Processing region: " << region << std::endl;
+    Region reg(region);
+    std::cout << "Processing region: " << reg.toString() << std::endl;
     return result;
 }
 
