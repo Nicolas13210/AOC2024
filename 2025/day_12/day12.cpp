@@ -12,7 +12,7 @@
 class Shape {
     public:
     Shape() = default;
-    Shape(std::vector<std::vector<bool>> cells) : cells(cells), id(-1) {
+    Shape(std::vector<std::vector<bool>> cells, int id) : cells(cells), id(id) {
         area = 0;
         for (const auto& row : cells) {
             for (bool cell : row) {
@@ -96,6 +96,19 @@ class Shape {
         return orientations;
     }
 
+    void placeShape(Shape shape, int x, int y) {
+        std::vector<std::vector<bool>> shape_cells = shape.getCells();
+        int shape_rows = shape_cells.size();
+        int shape_cols = shape_cells[0].size();
+        for (int r = 0; r < shape_rows; ++r) {
+            for (int c = 0; c < shape_cols; ++c) {
+                if (shape_cells[r][c]) {
+                    cells[y + r][x + c] = true;
+                }
+            }
+        }
+    }
+
 
 
 
@@ -120,7 +133,7 @@ class Shape {
                 rotated[c][rows - 1 - r] = cells[r][c];
             }
         }
-        return Shape(rotated);
+        return Shape(rotated,id);
     }
 
     Shape rotate180() const {
@@ -142,7 +155,7 @@ class Shape {
                 flipped[r][cols - 1 - c] = cells[r][c];
             }
         }
-        return Shape(flipped);
+        return Shape(flipped,id);
     }
 
     Shape flipVertical() const {
@@ -154,7 +167,7 @@ class Shape {
                 flipped[rows - 1 - r][c] = cells[r][c];
             }
         }
-        return Shape(flipped);
+        return Shape(flipped,id);
     }
 
     std::vector<std::vector<bool>> cells;
@@ -176,7 +189,7 @@ class Region {
             shape_amounts.push_back(std::stoi(amt_str));
         }
         std::vector<std::vector<bool>> region_cells(size.second, std::vector<bool>(size.first, false));
-        region = Shape(region_cells);
+        region = Shape(region_cells, -1);
     }
     std::pair<int,int> getSize() const {
         return size;
@@ -201,6 +214,14 @@ class Region {
         }
         return true;
     }
+
+
+
+    void placeShape(Shape shape, int x, int y) {
+        region.placeShape(shape, x, y);
+        
+    }
+
     bool shouldStop() const{
         for (int amt : shape_amounts) {
             if (amt > 0) {
@@ -210,9 +231,10 @@ class Region {
         return true;
     }
 
-    bool canFitAllShapes(const std::map<int, Shape>& shapes) const {
+
+    std::pair<bool,Shape> canFitAllShapes(const std::map<int, Shape>& shapes) {
         if (shouldStop()) {
-            return true;
+            return {true, region};
         }
 
         int minAreaNeeded = 0;
@@ -220,18 +242,43 @@ class Region {
         // int maxHeightNeeded = 0;
         for (size_t i = 0; i < shape_amounts.size(); i++) {
             minAreaNeeded += shape_amounts[i] * shapes.at(i).getArea();
-            // maxWidthNeeded += shape_amounts[i] * shapes.at(i).getWidth();
-            // maxHeightNeeded += shape_amounts[i] * shapes.at(i).getHeight(); 
         }
-        // if ((maxWidthNeeded < size.first && maxHeightNeeded < size.second) || (maxHeightNeeded < size.first && maxWidthNeeded < size.second)) {
-        //     return true;
-        // }
-
-        if (minAreaNeeded > size.first * size.second) {
-            return false;
+        int availableArea = size.first * size.second - region.getArea();
+        if (minAreaNeeded > availableArea) {
+            return {false, Shape()};
         }
 
-        return true;
+        Shape currentShape;
+        int shapeId = -1;
+        for (size_t i = 0; i < shape_amounts.size(); i++) {
+            if (shape_amounts[i] > 0) {
+                currentShape = shapes.at(i);
+                shapeId = i;
+                break;
+            }
+        }
+
+        std::vector<Shape> orientations = currentShape.getAllUniqueOrientations();
+        for (const Shape& orientation : orientations) {
+            for (int i = 0; i <= size.first - orientation.getWidth(); ++i) {
+                for (int j = 0; j <= size.second - orientation.getHeight(); ++j) {
+                    if (canFit(orientation, i, j)) {
+                        Region newRegion = *this;
+                        newRegion.placeShape(orientation, i, j);
+                        newRegion.shape_amounts[orientation.getId()]--;
+                        auto [canFitAll, finalRegion] = newRegion.canFitAllShapes(shapes);
+                        if (canFitAll) {
+                            return {true, region};
+                        }
+                    }
+                }
+            }
+        }
+
+
+        
+
+        return {false, Shape()};
     }
 
     std::string toString() const {
@@ -260,7 +307,8 @@ void getShapes(std::vector<std::string> shape_descriptions, std::map<int, Shape>
 int processRegion(const std::string& region, const std::map<int, Shape>& shapes) {
     int result = 0;
     Region reg(region);
-    if (reg.canFitAllShapes(shapes)) {
+    auto [canFit, finalRegion] = reg.canFitAllShapes(shapes);
+    if (canFit) {
         result = 1;
     }
     return result;
